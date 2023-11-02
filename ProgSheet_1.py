@@ -1,6 +1,7 @@
 
-from scipy.sparse import spdiags, kron, eye, linalg
 import numpy as np
+import matplotlib.pyplot as plt
+from scipy.sparse import spdiags, kron, eye, linalg
 
 def A_matrix(n):
     ones = np.ones(n-1);
@@ -18,28 +19,33 @@ def jacobi_iteration(A, u0, b, eps):
         uk = uk + alpha
     return uk
 
-n = 128
-A = A_matrix(n)
-u0 = np.zeros((n-1)*(n-1))
+def solve_ploblem_1(n, plot_solution=False):
+    A = A_matrix(n)
+    u0 = np.zeros((n-1)*(n-1))
 
-x = y = np.linspace(0,1,n+1)[1:-1]
-X, Y = np.meshgrid(x,y)
+    x = y = np.linspace(0,1,n+1)[1:-1]
+    X, Y = np.meshgrid(x,y)
 
-f = 5 * np.pi**2 * np.sin(2*np.pi*X)*np.sin(np.pi*Y)
-b = f.flatten()
+    f = 5 * np.pi**2 * np.sin(2*np.pi*X)*np.sin(np.pi*Y)
+    b = f.flatten()
 
-# u = linalg.spsolve(A, b)
-u = jacobi_iteration(A, u0, b, 1e-10)
-u.shape
-# help(linalg.spsolve)
+    u = jacobi_iteration(A, u0, b, 1e-10)
 
-import matplotlib.pyplot as plt
-fig = plt.figure()
-ax = fig.add_subplot(projection='3d')
+    if plot_solution:
+        plot_problem_1(X,Y, u.reshape((n-1,n-1)))
 
-ax.set_xlabel('X')
-ax.set_ylabel('Y')
+    return u, (X,Y)
 
-ax.plot_surface(X,Y,u.reshape((n-1,n-1)))
+def plot_problem_1(X, Y, u):
+    fig = plt.figure()
+    ax = fig.add_subplot(projection='3d')
+    
+    ax.set_xlabel('X')
+    ax.set_ylabel('Y')
+    
+    ax.plot_surface(X,Y,u)
+    return fig
 
-plt.show()
+if __name__ == "__main__":
+    for n in [8,16,32,64,128]:
+        solve_ploblem_1(n, n == 128)
