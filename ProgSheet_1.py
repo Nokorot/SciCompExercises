@@ -19,7 +19,7 @@ from scipy.sparse import spdiags, kron, eye, linalg
 
 def A_matrix(n):
     ones = np.ones(n-1);
-    L = np.sqrt(n)*spdiags([-ones, 2*ones, ones], [-1,0,1])
+    L = spdiags([-ones, 2*ones, ones], [-1,0,1])
     I = eye(n-1)
     return kron(I,L) + kron(L,I)
 
@@ -70,13 +70,14 @@ def problem_1_absolut_error(n, u_approx, XY):
     return np.max(np.abs(u_approx - u.flatten()))
 
 
-ns = [8,16,32,64,128]
-us = [ ploblem_1_solve(n) for n in ns ]
-
-fig = problem_1_plot(*us[-1])
-
-
-u_ = ploblem_1_solve(n)
-fig = problem_1_plot(u_)
-
-errors = [ problem_1_absolut_error(n, *un) for n, u in zip(ns,us) ]
+print(A_matrix(4).toarray())
+# ns = [8,16,32,64,128]
+# us = [ ploblem_1_solve(n) for n in ns ]
+# 
+# fig = problem_1_plot(*us[-1])
+# 
+# 
+# u_ = ploblem_1_solve(n)
+# fig = problem_1_plot(u_)
+# 
+# errors = [ problem_1_absolut_error(n, *un) for n, u in zip(ns,us) ]
