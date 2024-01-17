@@ -58,16 +58,12 @@ def solve(A, b, dirichlet_nodes, nodes, dirichlet_fn):
     
     Iu_D = np.zeros(len(nodes))
     Iu_D[dirichlet_nodes] = dirichlet_fn( nodes[dirichlet_nodes][:,0], nodes[dirichlet_nodes][:,1] ) 
-    ## ???
-
 
     interior = list(set(np.arange(len(nodes))) - set(dirichlet_nodes));
-    
     b_inner = b[interior]
-    A_inner = A[tuple(np.meshgrid(interior, interior, sparse=True))]
+    A_inner = A[tuple(np.meshgrid(interior, interior, indexing='ij'))]
 
     b_til = b_inner - A.dot(Iu_D)[interior]
-
 
     u = np.zeros(len(nodes));
     
@@ -93,19 +89,17 @@ nodes, elements, boundary_nodes, boundary_edges = christmas_tree_mesh(2)
 a = nodes[boundary_edges][:,0]
 b = nodes[boundary_edges][:,1]
 
+# Neumann edges are those where the y coordinate changes
 x = (a[:,1] - b[:,1] != 0)
 neumann_edges = np.array(boundary_edges)[x]
 
+# Direchlet nodes are those with y coordinate in 0, 2, 4 and 6
 y_coords = nodes[boundary_nodes][:,1] 
-
-x = y_coords == 0;
+x = (y_coords == 0);
 for k in [2,4,6]:
     x += (y_coords == k)
 
 dirichlet_nodes = np.array(boundary_nodes)[x]
-# print(dirichlet_nodes)
-
-
 
 A = assemble_stiffness_matrix(elements, nodes)
 M = assemble_mass_matrix(elements, nodes)
@@ -114,10 +108,10 @@ def f(x,y):
     return np.pi**2 / 4 * np.cos(np.pi * y / 2) - 1;
 
 def g(x,y):
-    return 1 / np.sqrt(5) * (3. / 5 + 2 * np.abs(x) - np.pi / 2 * np.sin(np.pi * y / 2));
+    return 1 / np.sqrt(5.) * (3. / 5 + 2 * np.abs(x) - np.pi / 2 * np.sin(np.pi * y / 2));
 
 def u_D(x, y):
-    return x**2 / 2 + 3 * y / 5 + np.cos(np.pi * y / 2);
+    return x**2 / 2. + 3. * y / 5 + np.cos(np.pi * y / 2);
 
 b_base = M.dot( f(nodes[:,0], nodes[:,1]) )
 b_neumann = assemble_neumann_vector(neumann_edges, nodes, g)

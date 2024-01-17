@@ -135,17 +135,16 @@ def ref_map(vertex_coords):
           [c[0] - a[0], c[1] - a[1]] ];
     return np.matrix(F), a;
 
-M0 = 1/24.0 * np.matrix([[2.0, 1.0, 1.0], 
+def assemble_mass_matrix_local(vertex_coords):
+    M0 = 1/24.0 * np.matrix([[2.0, 1.0, 1.0], 
                          [1.0, 2.0, 1.0], 
                          [1.0, 1.0, 2.0]]);
-
-def assemble_mass_matrix_local(vertex_coords):
     F, tras = ref_map(vertex_coords);
     Fdet = abs(np.linalg.det(F));
     return Fdet * M0;
 
-grad_phi = np.matrix([[ -1, -1 ], [ 1, 0 ], [ 0, 1 ]]);
 def assemble_stiffness_matrix_local(vertex_coords):
+    grad_phi = np.matrix([[ -1, -1 ], [ 1, 0 ], [ 0, 1 ]]);
     F, tras = ref_map(vertex_coords);
     Finv = np.linalg.inv(F).T;
 
