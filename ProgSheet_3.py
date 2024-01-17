@@ -125,7 +125,7 @@ def assemble_mass_matrix(elements, nodes):
 
 
 
-N = 100
+N = 10
 nodes, elements, boundary_nodes = criss_cross_mesh(N)
 
 
@@ -194,13 +194,15 @@ def compute_I_f(elements, nodes):
 
     return 5 * np.pi**2 * np.sin(2*np.pi*x)*np.sin(np.pi*y)
 
-A = assemble_stiffness_matrix(elements, nodes)
-M = assemble_mass_matrix(elements, nodes)
 
-f = compute_I_f(elements, nodes)
-b = M.dot(f)
-
-u = solve(A, b, boundary_nodes)
-fig = plot_solution(nodes[:, 0], nodes[:,1], u)
-
-plt.show()
+if __name__ == "__main__":
+    A = assemble_stiffness_matrix(elements, nodes)
+    M = assemble_mass_matrix(elements, nodes)
+    
+    f = compute_I_f(elements, nodes)
+    b = M.dot(f)
+    
+    u = solve(A, b, boundary_nodes)
+    fig = plot_solution(nodes[:, 0], nodes[:,1], u)
+    
+    plt.show()

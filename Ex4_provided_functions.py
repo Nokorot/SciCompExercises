@@ -139,21 +139,22 @@ def christmas_tree_mesh(k, tree_levels = 4):
     return nodes, elements, boundary_nodes, boundary_edges
 
 
-# +
-# Visualize the mesh
-nodes, elements, boundary_nodes, boundary_edges = christmas_tree_mesh(2)
-
-fig = plt.figure(figsize=(6,10))
-
-plt.triplot(nodes[:,0], nodes[:,1], elements, color='g') # Triangles
-
-# Boundary edges
-for j, s in enumerate(boundary_edges):
-    edge = nodes[s]
-    plt.plot(edge[:,0], edge[:,1], 'y')
-
-plt.plot(nodes[:,0], nodes[:,1], 'ro') # Nodes
-plt.plot(nodes[boundary_nodes,0], nodes[boundary_nodes,1], 'yo', mfc='none') # Boundary nodes
-
-plt.xlim(-2.7, 2.7); plt.ylim(-0.5, 8.2)
-plt.show()
+if __name__ == "__main__":
+    # +
+    # Visualize the mesh
+    nodes, elements, boundary_nodes, boundary_edges = christmas_tree_mesh(2)
+    
+    fig = plt.figure(figsize=(6,10))
+    
+    plt.triplot(nodes[:,0], nodes[:,1], elements, color='g') # Triangles
+    
+    # Boundary edges
+    for j, s in enumerate(boundary_edges):
+        edge = nodes[s]
+        plt.plot(edge[:,0], edge[:,1], 'y')
+    
+    plt.plot(nodes[:,0], nodes[:,1], 'ro') # Nodes
+    plt.plot(nodes[boundary_nodes,0], nodes[boundary_nodes,1], 'yo', mfc='none') # Boundary nodes
+    
+    plt.xlim(-2.7, 2.7); plt.ylim(-0.5, 8.2)
+    plt.show()

@@ -33,177 +33,109 @@ from scipy.spatial import Delaunay
 import matplotlib.pyplot as plt
 
 
-# -
-
-def christmas_tree_mesh(k, tree_levels = 4):
-    ## Generates a mesh of a Christmas tree domain
-    ##       width of the base:   [-0.5 - 0.5*tree_levels, 0.5 + 0.5*tree_levels]
-    ##       height of the tree:  [0., 2*tree_levels]
-    
-    ## Returns: nodes:          an array with the coordinates of every node, i.e. nodes[k] = [x_k, y_k]
-    ##          elements:       an array of the elements, each of them represented by the indices (in nodes) of its 3 vertices
-    ##          boundary_nodes: a list of the indices (in nodes) of those nodes in the boundary of the domain
-    ##          boundary_edges: a list of boundary edges, each of them being a pair of node indices
-    
-    total_height = tree_levels * 2.
-    
-    xh = 1. / (2**k)
-    yh = 2. * xh
-    
-    x_at_level = {}
-    y_at_level = {}
-    elements_at_level = {}
-    boundary_nodes_at_level = {}
-    boundary_edges_at_level = {}
-    
-    node_idx = 1
-    last_boundary_node_left = 0
-    last_boundary_node_right = 0
-    
-    for L in range(tree_levels):
-        if L == 0:
-            # Initialize with the top node
-            x_at_level[L] = [0.]
-            y_at_level[L] = [2.*tree_levels]
-            boundary_nodes_at_level[L] = [0]
-        else:
-            boundary_nodes_at_level[L] = []
-            
-            # Initialize with the last 1 + L*2**k nodes from previous level
-            q = 1 + L*2**k
-            x_at_level[L] = x_at_level[L-1][-q:]
-            y_at_level[L] = y_at_level[L-1][-q:]
-        
-        boundary_edges_at_level[L] = []
-        
-        for i in range(1, 2**k + 1):
-            yi = total_height - L*2. - i*yh
-            
-            boundary_edges_at_level[L].append([node_idx, last_boundary_node_left])
-            boundary_edges_at_level[L].append([node_idx+1, last_boundary_node_right])
-            
-            boundary_nodes_at_level[L].append(node_idx)
-            boundary_nodes_at_level[L].append(node_idx+1)
-            
-            last_boundary_node_left = node_idx
-            last_boundary_node_right = node_idx + 1
-            
-            for j in reversed(range(1, 1 + i + L * 2**(k-1))):
-                y_at_level[L].append(yi)
-                y_at_level[L].append(yi)
-                
-                x_at_level[L].append(-j * xh)
-                x_at_level[L].append(j * xh)
-                
-                node_idx += 2
-            
-            y_at_level[L].append(yi)
-            x_at_level[L].append(0.)
-            node_idx += 1
-        
-        if L == (tree_levels - 1):
-            # The last (2**k) * (L+2) - 1 are also boundary nodes
-            q = (2**k) * (L+2) - 1
-            
-            for idx in range(node_idx - q, node_idx):
-                boundary_nodes_at_level[L].append(idx)
-                boundary_edges_at_level[L].append([idx, idx - 2])
-                
-            boundary_edges_at_level[L].append([node_idx - 1, node_idx - 2])
-        else:
-            # The first 2**k from the last (2**k) * (L+2) - 1 are also boundary nodes
-            q = (2**k) * (L+2) - 1
-            for idx in range(node_idx - q, node_idx - q + 2**k):
-                boundary_nodes_at_level[L].append(idx)
-                
-                boundary_edges_at_level[L].append([idx, idx - 2])
-            
-            last_boundary_node_left += 2**k
-            last_boundary_node_right += 2**k
-        
-        elements_at_level[L] = Delaunay(np.hstack([np.asarray(x_at_level[L])[:, np.newaxis],
-                                                   np.asarray(y_at_level[L])[:, np.newaxis]])).simplices
-        
-    x = x_at_level[0]
-    y = y_at_level[0]
-    elements = elements_at_level[0]
-    boundary_nodes = boundary_nodes_at_level[0]
-    boundary_edges = boundary_edges_at_level[0]
-    
-    for L in range(1, tree_levels):
-        # Ignore the first 1 + L*2**k nodes
-        q = 1 + L*2**k
-        elements_at_level[L] += len(x) - q
-        boundary_nodes += boundary_nodes_at_level[L]
-        boundary_edges += boundary_edges_at_level[L]
-        
-        x += x_at_level[L][q:]
-        y += y_at_level[L][q:]
-        
-        elements = np.concatenate((elements, elements_at_level[L]))
-    
-    nodes = np.hstack([np.asarray(x)[:, np.newaxis], np.asarray(y)[:, np.newaxis]])
-    
-    return nodes, elements, boundary_nodes, boundary_edges
-
-
+from Ex4_provided_functions import *
 
 # print(boundary_edges)
 
 # ## (a)
 
 def assemble_neumann_vector_local(vertex_coords):
-    return np.length(vertex_coords[0] - vertex_coords[1]) / 2
-
+    return np.linalg.norm(vertex_coords[0] - vertex_coords[1]) / 2
 
 def assemble_neumann_vector(neumann_edges, nodes, neumann_fn):
     neumann_vector = np.zeros(len(nodes))
     for edge in neumann_edges:
         edge_vertex_coords = nodes[edge]
         x_edge = (edge_vertex_coords[0] + edge_vertex_coords[1]) / 2
-        edge_value = neumann_fn(x_edge) * assemble_neumann_vector_local(edge_vertex_coords)
+        edge_value = neumann_fn(x_edge[0], x_edge[1]) * assemble_neumann_vector_local(edge_vertex_coords)
         neumann_vector[edge] += edge_value
+    return neumann_vector
  
  # ## (b)
 
  
 def solve(A, b, dirichlet_nodes, nodes, dirichlet_fn):
-    interior = list(set(np.arange(len(b))) - set(dirichlet_nodes));
-    A = A[tuple(np.meshgrid(interior, interior, sparse=True))]
-    b = b[interior];
-
-    u = np.zeros(len(b)**2);
-
     
+    Iu_D = np.zeros(len(nodes))
+    Iu_D[dirichlet_nodes] = dirichlet_fn( nodes[dirichlet_nodes][:,0], nodes[dirichlet_nodes][:,1] ) 
+    ## ???
+
+
+    interior = list(set(np.arange(len(nodes))) - set(dirichlet_nodes));
     
-    u[interior] = sp.linalg.spsolve(A, b.astype(np.float64));
+    b_inner = b[interior]
+    A_inner = A[tuple(np.meshgrid(interior, interior, sparse=True))]
+
+    b_til = b_inner - A.dot(Iu_D)[interior]
+
+
+    u = np.zeros(len(nodes));
+    
+    # print(sp.linalg.spsolve(A_inner, b_til.astype(np.float64)))
+
+    u[dirichlet_nodes] = Iu_D[dirichlet_nodes]
+    u[interior] = sp.linalg.spsolve(A_inner, b_til.astype(np.float64));
     return u;
 
-    # A[tuple(np.meshgrid(dirichlet_nodes, dirichlet_nodes, sparse=True))] \
-    #         = sp.eye(len(dirichlet_nodes));
-    # b[dirichlet_nodes] = 0;
 
-    # return sp.linalg.spsolve(A, b.astype(np.float64));
-    # sp.linalg.spsolve()
+
+### Ex 3
+from ProgSheet_3 import assemble_mass_matrix, assemble_stiffness_matrix
+
+nodes, elements, boundary_nodes, boundary_edges = christmas_tree_mesh(2)
 
 # ## (c)
 
 # +
 # Visualize the mesh
-nodes, elements, boundary_nodes, boundary_edges = christmas_tree_mesh(2)
 
-fig = plt.figure(figsize=(6,10))
 
-plt.triplot(nodes[:,0], nodes[:,1], elements, color='g') # Triangles
+a = nodes[boundary_edges][:,0]
+b = nodes[boundary_edges][:,1]
 
-# Boundary edges
-for j, s in enumerate(boundary_edges):
-    edge = nodes[s]
-    plt.plot(edge[:,0], edge[:,1], 'y')
+x = (a[:,1] - b[:,1] != 0)
+neumann_edges = np.array(boundary_edges)[x]
 
-plt.plot(nodes[:,0], nodes[:,1], 'ro') # Nodes
-plt.plot(nodes[boundary_nodes,0], nodes[boundary_nodes,1], 'yo', mfc='none') # Boundary nodes
+y_coords = nodes[boundary_nodes][:,1] 
 
-plt.xlim(-2.7, 2.7); plt.ylim(-0.5, 8.2)
-plt.show()
+x = y_coords == 0;
+for k in [2,4,6]:
+    x += (y_coords == k)
 
+dirichlet_nodes = np.array(boundary_nodes)[x]
+# print(dirichlet_nodes)
+
+
+
+A = assemble_stiffness_matrix(elements, nodes)
+M = assemble_mass_matrix(elements, nodes)
+
+def f(x,y):
+    return np.pi**2 / 4 * np.cos(np.pi * y / 2) - 1;
+
+def g(x,y):
+    return 1 / np.sqrt(5) * (3. / 5 + 2 * np.abs(x) - np.pi / 2 * np.sin(np.pi * y / 2));
+
+def u_D(x, y):
+    return x**2 / 2 + 3 * y / 5 + np.cos(np.pi * y / 2);
+
+b_base = M.dot( f(nodes[:,0], nodes[:,1]) )
+b_neumann = assemble_neumann_vector(neumann_edges, nodes, g)
+
+# print( sum(A.dot(np.ones(len(nodes)))) )
+u = solve(A, b_base + b_neumann, dirichlet_nodes, nodes, u_D)
+
+def plot_solution(nodes, elements, u):
+    x = nodes[:,0]
+    y = nodes[:,1]
+
+    from matplotlib.tri import Triangulation
+    triangulation = Triangulation(x, y, elements)
+
+    fig1, ax1 = plt.subplots()
+    ax1.set_aspect('equal')
+    tpc = ax1.tripcolor(triangulation, u) #, shading='flat', vmin=0, vmax=5.5)
+    fig1.colorbar(tpc)
+    plt.show()
+
+plot_solution(nodes, elements, u)

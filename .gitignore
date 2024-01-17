@@ -2,3 +2,5 @@
 .virtual_documents
 test.py
 __pycache__/
+*pdf
+*png
