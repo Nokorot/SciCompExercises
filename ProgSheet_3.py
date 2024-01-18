@@ -131,8 +131,8 @@ nodes, elements, boundary_nodes = criss_cross_mesh(N)
 
 def ref_map(vertex_coords):
     [ a, b, c ] = vertex_coords;
-    F = [ [b[0] - a[0], b[1] - a[1]],
-          [c[0] - a[0], c[1] - a[1]] ];
+    F = [ [b[0] - a[0], c[0] - a[0]],
+          [b[1] - a[1], c[1] - a[1]] ];
     return np.matrix(F), a;
 
 def assemble_mass_matrix_local(vertex_coords):
@@ -155,7 +155,8 @@ def assemble_stiffness_matrix_local(vertex_coords):
         A[i,i] = np.dot(interm[i].T, interm[i]);
         for j in range(i+1, 3):
             A[i,j] = A[j,i] = np.dot(interm[i].T, interm[j]);
-    return A;
+    # return A;
+    return .5 * abs(np.linalg.det(F)) * A;
 
 def solve(A, b, dirichlet_nodes):
     interior = list(set(np.arange(len(b))) - set(dirichlet_nodes));
@@ -197,6 +198,8 @@ def compute_I_f(elements, nodes):
 if __name__ == "__main__":
     A = assemble_stiffness_matrix(elements, nodes)
     M = assemble_mass_matrix(elements, nodes)
+
+    print(np.sum( A.dot(np.ones(len(nodes))) ))
     
     f = compute_I_f(elements, nodes)
     b = M.dot(f)
